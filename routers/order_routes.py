@@ -1,11 +1,10 @@
 from fastapi import APIRouter
 
-order_router = APIRouter(
-    prefix="/orders",
-    tags=['Order']
+order_route = APIRouter(
+    prefix='/order',
+    tags=['order']
 )
 
-
-@order_router.get("/")
-def order_root():
-    return {"message": "Order Router"}
+@order_route.get("/")
+def root():
+    return {"message": "Order Routes"}

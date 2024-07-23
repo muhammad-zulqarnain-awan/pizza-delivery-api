@@ -1,46 +1,50 @@
 from fastapi import APIRouter, status, HTTPException
-from werkzeug.security import generate_password_hash
-from database import SessionLocal
-from schemas.schema import SignUpModel
 from models.model import User
+from schemas.schema import LogInModel, SignUpModel, SignUpResponseModel
+from werkzeug.security import generate_password_hash, check_password_hash
+from database import SessionLocal, engine
 
+session = SessionLocal(bind=engine)
 
-auth_router = APIRouter(
-    prefix="/auth",
-    tags=['Auth']
+auth_route = APIRouter(
+    prefix='/auth',
+    tags=['auth']
 )
 
-session = SessionLocal()
-
-@auth_router.get("/")
+@auth_route.get("/")
 def root():
-    return {"message": "Auth Router"}
+    return {"message": "Auth Routes"}
 
-@auth_router.post("/signup", response_model=SignUpModel, status_code=status.HTTP_201_CREATED)
-def signup(signup_user: SignUpModel):
+
+@auth_route.post("/signup", response_model=SignUpResponseModel, status_code=status.HTTP_201_CREATED)
+def signup(signupuser: SignUpModel, ):
+
+    db_email = session.query(User).filter(User.email == signupuser.email).first()
+    db_username = session.query(User).filter(User.username == signupuser.username).first()
+
+    if  db_email or db_username:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or email already exists!")
+
+    signupuser.password = generate_password_hash(signupuser.password)
     
-    db_email = session.query(User).filter(User.email == signup_user.email).first()
-    db_username = session.query(User).filter(User.username == signup_user.username).first()
+    newuser = User(**signupuser.model_dump())
 
-    if not db_email or db_username:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or Email Address already exists!")
-    
-    new_user = User(
-        username=signup_user.username,
-        email=signup_user.email,
-        password=generate_password_hash(signup_user.password),
-        is_active=signup_user.is_active,
-        is_staff=signup_user.is_staff
-    )
-
-    session.add(new_user)
+    session.add(newuser)
     session.commit()
 
-    return {"message": "Sign UP successfully"}
+    return newuser
 
 
+@auth_route.post("/login", status_code=status.HTTP_200_OK)
+def login(loginuser: LogInModel):
 
-@auth_router.post("/login")
-def login():
-    pass
+    user_email = session.query(User).filter(User.email == loginuser.email).first()
+    password = session.query(User).filter(User.password == loginuser.password).first()
+    user_password = check_password_hash(password)
 
+    if not user_email:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No user found!")
+    if not user_password:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is incorrect")
+    
+    return {"message": "User LogIn Successfully!"}
