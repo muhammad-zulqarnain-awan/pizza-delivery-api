@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
+
 class SignUpModel(BaseModel):
     
     username: str
@@ -44,6 +45,8 @@ class SignUpResponseModel(BaseModel):
             }
         }
 
+
+
 class LogInModel(BaseModel):
 
     email: EmailStr
@@ -53,8 +56,8 @@ class LogInModel(BaseModel):
 
         from_attributes = True
         json_schema_extra = {
-            "example": {
-                "email": "johndoe@example.com",
-                "password": "password"
+            'example': {
+                'email': 'johndoe@example.com',
+                'password': 'password'
             }
         }
